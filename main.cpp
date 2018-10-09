@@ -6,19 +6,19 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-
-
-int obstaculos = 8, frame_sel = 0;
-string mensagem = "Clique em iniciar!";
-bool espaco_liberado = false, clique_liberado = true;
-int obsX[8];
-GLfloat deslize = 0.0;
-
 const int p0_sup = 100, p0_inf = p0_sup+4, largura_p0 = 1000;
 const int p1_inf = p0_sup-15, p1_sup = p1_inf-4, largura_p1 = 100;
 const int barra_dir = largura_p0+largura_p1-10, barra_esq = largura_p0+largura_p1-12, barra_alt = p1_sup-30;
 const int LARG_JANELA = 500, ALT_JANELA = 500;
 const int font = (int)GLUT_BITMAP_TIMES_ROMAN_24;
+const float gravidade = 9.8, vel = 20.0, tempo_pulo = 2*(vel/gravidade);
+
+int tempo_novo, tempo_antigo;
+int obstaculos = 8, frame_sel = 0;
+string mensagem = "Clique em iniciar!";
+bool espaco_liberado = false, clique_liberado = true, fim_jogo = false;
+int obsX[8], per_x = 10, per_y = p0_sup;
+GLfloat deslize = 0.0;
 
 void renderBitmapString(float x, float y, void *font,const char *string){
     const char *c;
@@ -177,17 +177,17 @@ void desenhaObstaculos(){
 void desenhaPersonagem(){
     glColor3f(1.0, 1.0, 0.0);
     glBegin(GL_QUADS);
-        glVertex2f(10, p0_sup);
-        glVertex2f(10, p0_sup-5);
-        glVertex2f(20, p0_sup-5);
-        glVertex2f(20, p0_sup);
+        glVertex2f(per_x, per_y);
+        glVertex2f(per_x, per_y-5);
+        glVertex2f(per_x+10, per_y-5);
+        glVertex2f(per_x+10, per_y);
     glEnd();
     glColor3f(0.0, 0.0, 1.0);
     glBegin(GL_QUADS);
-        glVertex2f(10, p0_sup-5);
-        glVertex2f(10, p0_sup-10);
-        glVertex2f(20, p0_sup-10);
-        glVertex2f(20, p0_sup-5);
+        glVertex2f(per_x, per_y-5);
+        glVertex2f(per_x, per_y-10);
+        glVertex2f(per_x+10, per_y-10);
+        glVertex2f(per_x+10, per_y-5);
     glEnd();
 }
 
@@ -232,10 +232,10 @@ void desenhaChegada(){
 void desenhaJogo(){
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glTranslatef(deslize, 0.0, 0.0);
+    desenhaPersonagem();
+    //glTranslatef(deslize, 0.0, 0.0);
     desenhaChao();
     desenhaObstaculos();
-    desenhaPersonagem();
     desenhaChegada();
     deslize -= 5;
 
@@ -243,7 +243,10 @@ void desenhaJogo(){
 }
 
 void pula(){
-    cout<<"pulei";
+    for(float t=0;t<=tempo_pulo;t+=0.2){
+        per_y = p0_sup - ((vel*t) - (0.5*gravidade*t*t));
+        cout<<"pulei do "<< p0_sup << " para o " << per_y << endl;
+    }
 }
 
 bool colidiu(){
@@ -268,6 +271,7 @@ void preparaJogo(){
     glMatrixMode(GL_MODELVIEW);
     glScalef(3.0, 3.0, 1.0);
     glutDisplayFunc(desenhaJogo);
+    glutIdleFunc(desenhaJogo);
 }
 
 void eventoMouse(int button, int state, int x, int y){
@@ -317,6 +321,16 @@ int main(int argc, char** argv)
     glutKeyboardFunc(eventoTeclado);
     // Controlar frames
     inicializa();
-    glutMainLoop();
+    tempo_novo = glutGet(GLUT_ELAPSED_TIME);
+    tempo_antigo = tempo_novo;
+    while(!fim_jogo){
+        tempo_novo = glutGet(GLUT_ELAPSED_TIME);
+        int delta_tempo = tempo_novo - tempo_antigo;
+        if(frame_sel==0 || delta_tempo > 1/frame_sel){
+            tempo_antigo = tempo_novo;
+            glutMainLoopEvent();
+        }
+    }
+
     return 0;
 }
