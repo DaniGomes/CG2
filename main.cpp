@@ -11,14 +11,14 @@ const int p1_inf = p0_sup-15, p1_sup = p1_inf-4, largura_p1 = 100;
 const int barra_dir = largura_p0+largura_p1-10, barra_esq = largura_p0+largura_p1-12, barra_alt = p1_sup-30;
 const int LARG_JANELA = 500, ALT_JANELA = 500;
 const int font = (int)GLUT_BITMAP_TIMES_ROMAN_24;
-const float gravidade = 9.8, vel = 20.0, tempo_pulo = 2*(vel/gravidade);
+const float gravidade = 9.8, vel = 2.0, tempo_pulo = 2*(vel/gravidade);
 
 int tempo_novo, tempo_antigo;
 int obstaculos = 8, frame_sel = 0;
 string mensagem = "Clique em iniciar!";
 bool espaco_liberado = false, clique_liberado = true, fim_jogo = false;
 int obsX[8], per_x = 10, per_y = p0_sup;
-GLfloat deslize = 0.0;
+GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, pulofake = 0.0;
 
 void renderBitmapString(float x, float y, void *font,const char *string){
     const char *c;
@@ -114,7 +114,7 @@ void desenhaTelaInicial(){
     char* char_type = (char*) s.c_str();
     renderBitmapString(150,410,(void *)font,char_type);
 
-    glFlush();
+    glutSwapBuffers();
 }
 
 void triangulo(int i){
@@ -153,6 +153,7 @@ void emCimaDoOutro(int i){
 
 void desenhaObstaculos(){
     glColor3f(1.0, 0.0, 0.0);
+    glTranslatef(deslize, 0.0, 0.0);
     int i = 0;
     for(int j=0;j<2;j++){
         triangulo(i++);
@@ -175,24 +176,34 @@ void desenhaObstaculos(){
 }
 
 void desenhaPersonagem(){
-    glColor3f(1.0, 1.0, 0.0);
-    glBegin(GL_QUADS);
-        glVertex2f(per_x, per_y);
-        glVertex2f(per_x, per_y-5);
-        glVertex2f(per_x+10, per_y-5);
-        glVertex2f(per_x+10, per_y);
-    glEnd();
-    glColor3f(0.0, 0.0, 1.0);
-    glBegin(GL_QUADS);
-        glVertex2f(per_x, per_y-5);
-        glVertex2f(per_x, per_y-10);
-        glVertex2f(per_x+10, per_y-10);
-        glVertex2f(per_x+10, per_y-5);
-    glEnd();
+    glPushMatrix();
+        /*
+        glTranslatef(per_x+5, per_y-5, 0);
+        glRotatef(angulo, 1.0, 1.0, 0.0);
+        glTranslatef(-per_x-5, -per_y+5, 0);
+        */
+        glTranslatef(0.0, pulo, 0.0);
+        glColor3f(1.0, 1.0, 0.0);
+        glBegin(GL_QUADS);
+            glVertex2f(per_x, per_y);
+            glVertex2f(per_x, per_y-5);
+            glVertex2f(per_x+10, per_y-5);
+            glVertex2f(per_x+10, per_y);
+        glEnd();
+        glColor3f(0.0, 0.0, 1.0);
+        glBegin(GL_QUADS);
+            glVertex2f(per_x, per_y-5);
+            glVertex2f(per_x, per_y-10);
+            glVertex2f(per_x+10, per_y-10);
+            glVertex2f(per_x+10, per_y-5);
+        glEnd();
+        glColor3f(1.0, 0.0, 0.0);
+    glPopMatrix();
 }
 
 void desenhaChao() {
     glColor3f(0.0, 1.0, 0.3);
+    glTranslatef(deslize, 0.0, 0.0);
     glBegin(GL_QUADS);
         glVertex2f(0, p0_sup);
         glVertex2f(largura_p0, p0_sup);
@@ -215,6 +226,7 @@ void desenhaChao() {
 
 void desenhaChegada(){
     glColor3f(1.0, 0.8, 1.0);
+    glTranslatef(deslize, 0.0, 0.0);
     glBegin(GL_POLYGON);
         glVertex2f(barra_esq, barra_alt);
         glVertex2f(barra_dir, barra_alt);
@@ -230,22 +242,22 @@ void desenhaChegada(){
 }
 
 void desenhaJogo(){
+
     glClear(GL_COLOR_BUFFER_BIT);
 
     desenhaPersonagem();
-    //glTranslatef(deslize, 0.0, 0.0);
     desenhaChao();
     desenhaObstaculos();
     desenhaChegada();
-    deslize -= 5;
 
-    glFlush();
+    glutSwapBuffers();
 }
 
 void pula(){
-    for(float t=0;t<=tempo_pulo;t+=0.2){
-        per_y = p0_sup - ((vel*t) - (0.5*gravidade*t*t));
-        cout<<"pulei do "<< p0_sup << " para o " << per_y << endl;
+    angulo += 90.0;
+    for(float t=0;t<=tempo_pulo;t+=0.002){
+        pulo += (vel*t) - (0.5*gravidade*t*t);
+        cout<<"pulei: "<< pulo << "t: " << t << "tempo: " << tempo_pulo << endl;
     }
 }
 
@@ -310,7 +322,7 @@ int main(int argc, char** argv)
 {
     srand(time(NULL));
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     // Iniciar janela
     glutInitWindowSize(LARG_JANELA, ALT_JANELA);
     glutCreateWindow("Trabalho 2");
@@ -326,11 +338,15 @@ int main(int argc, char** argv)
     while(!fim_jogo){
         tempo_novo = glutGet(GLUT_ELAPSED_TIME);
         int delta_tempo = tempo_novo - tempo_antigo;
-        if(frame_sel==0 || delta_tempo > 1/frame_sel){
+        if(frame_sel==0 || delta_tempo > 1000/frame_sel){
             tempo_antigo = tempo_novo;
+            deslize -= 0.1;
+            pula();
             glutMainLoopEvent();
+            glutPostRedisplay();
         }
     }
+
 
     return 0;
 }
