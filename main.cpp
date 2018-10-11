@@ -18,7 +18,7 @@ int obstaculos = 8, frame_sel = 30;
 string mensagem = "Clique em iniciar!";
 bool espaco_liberado = false, clique_liberado = true, fim_jogo = false;
 int obsX[8], per_x = 10, per_y = p0_sup;
-GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, i_pulo = 0.0;
+GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, i_pulo = 0.0, inc_ang = 90.0;
 
 int pulando = 0, vel = 300;
 int MAX_HEIGHT=30;
@@ -184,6 +184,10 @@ void desenhaObstaculos(){
 
 void desenhaPersonagem(){
     glPushMatrix();
+        glTranslatef(per_x+5, per_y-5, 0);
+        glRotatef(angulo, 0.0, 0.0, 1.0);
+        glTranslatef(-per_x-5, -per_y+5, 0);
+
     glColor3f(1.0, 1.0, 0.0);
     glBegin(GL_QUADS);
         glVertex2f(per_x, per_y);
@@ -252,9 +256,9 @@ void desenhaJogo(){
     if(pulando!=0)
     {
         glPushMatrix();
-        glTranslatef(0.0,-height,0.0);
         glTranslatef(per_x+5, per_y-5, 0);
-        glRotatef(angulo, 1.0, 1.0, 0.0);
+        glTranslatef(0.0,-height,0.0);
+        //glRotatef(angulo, 0.0, 0.0, 1.0);
         glTranslatef(-per_x-5, -per_y+5, 0);
         desenhaPersonagem();
         glPopMatrix();
@@ -286,13 +290,14 @@ void descendo(){
 	}
 	else if(pulando==-1 && (int)height==0){
 		pulando=0;
+		inc_ang += 90;
 		jcount--;
 	}
 }
 
 void pula(int novo_t){
     if(espaco_liberado == true){
-        angulo += 90.0;
+        angulo = inc_ang;
         subindo();
         descendo();
     }
@@ -379,7 +384,7 @@ int main(int argc, char** argv){
         if(frame_sel==0 || delta_tempo > 1000/frame_sel){
             //cout << delta_tempo << endl;
             tempo_antigo = tempo_novo;
-            deslize -= 0.4;
+            deslize -= 0.6;
             pula(tempo_novo/1000);
             i_pulo+=0.2;
             glutMainLoopEvent();
