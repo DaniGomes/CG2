@@ -11,7 +11,7 @@ const int p1_inf = p0_sup-15, p1_sup = p1_inf-4, largura_p1 = 100;
 const int barra_dir = largura_p0+largura_p1-10, barra_esq = largura_p0+largura_p1-12, barra_alt = p1_sup-30;
 const int LARG_JANELA = 500, ALT_JANELA = 500;
 const int font = (int)GLUT_BITMAP_TIMES_ROMAN_24;
-const float gravidade = 10.0, vel = 10.0, tempo_pulo = 2*vel/gravidade;
+const float gravidade = 10.0, tempo_pulo = 3000;
 
 int tempo_novo, tempo_antigo, inicio_pulo;
 int obstaculos = 8, frame_sel = 30;
@@ -20,8 +20,8 @@ bool espaco_liberado = false, clique_liberado = true, fim_jogo = false;
 int obsX[8], per_x = 10, per_y = p0_sup;
 GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, i_pulo = 0.0;
 
-int pulando = 0;
-int MAX_HEIGHT=25;
+int pulando = 0, vel = 300;
+int MAX_HEIGHT=30;
 GLint jcount=0;
 GLfloat height=0.0;
 
@@ -253,9 +253,9 @@ void desenhaJogo(){
     {
         glPushMatrix();
         glTranslatef(0.0,-height,0.0);
-        //glTranslatef(per_x+5, per_y-5, 0);
-        //glRotatef(angulo, 1.0, 1.0, 0.0);
-        //glTranslatef(-per_x-5, -per_y+5, 0);
+        glTranslatef(per_x+5, per_y-5, 0);
+        glRotatef(angulo, 1.0, 1.0, 0.0);
+        glTranslatef(-per_x-5, -per_y+5, 0);
         desenhaPersonagem();
         glPopMatrix();
     }else if(pulando == 0)
@@ -272,8 +272,7 @@ bool colidiu(){
     return true;
 }
 
-void subindo()
-{
+void subindo(){
 	if(pulando==1 && height<MAX_HEIGHT){
         height+=0.01;
 	}
@@ -281,8 +280,7 @@ void subindo()
 		pulando=-1;
 }
 
-void descendo()
-{
+void descendo(){
 	if(pulando==-1 && height>0){
         height-=0.01;
 	}
@@ -297,9 +295,8 @@ void pula(int novo_t){
         angulo += 90.0;
         subindo();
         descendo();
-        glutPostRedisplay();
     }
-    glutTimerFunc(vel,pula,0);
+    glutTimerFunc(vel,pula,10);
 }
 
 void geraPosicoesObs() {
@@ -320,7 +317,6 @@ void preparaJogo(){
     glMatrixMode(GL_MODELVIEW);
     glScalef(3.0, 3.0, 1.0);
     glutDisplayFunc(desenhaJogo);
-    //glutIdleFunc(desenhaJogo);
 }
 
 void eventoMouse(int button, int state, int x, int y){
@@ -344,8 +340,6 @@ void eventoTeclado(unsigned char key, int x, int y){
 			pulando = 1;
 			jcount++;
 		}
-        //inicio_pulo = glutGet(GLUT_ELAPSED_TIME)/1000;
-        //pulo = 0;
     }
 }
 
@@ -362,8 +356,7 @@ void inicializa(){
     glClearColor(1.0, 1.0, 1.0, 1.0);
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv){
     srand(time(NULL));
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
@@ -375,7 +368,7 @@ int main(int argc, char** argv)
     glutReshapeFunc(alteraTamanhoJanela);
     glutMouseFunc(eventoMouse);
     glutKeyboardFunc(eventoTeclado);
-    glutTimerFunc(vel,pula,0);
+    glutTimerFunc(vel,pula,10);
     // Controlar frames
     inicializa();
     tempo_novo = glutGet(GLUT_ELAPSED_TIME);
@@ -393,7 +386,6 @@ int main(int argc, char** argv)
             glutPostRedisplay();
         }
     }
-
 
     return 0;
 }
