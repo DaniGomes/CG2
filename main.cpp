@@ -6,6 +6,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+const int obstaculos = 8;
 const int p0_sup = 100, p0_inf = p0_sup+4, largura_p0 = 1000;
 const int p1_inf = p0_sup-15, p1_sup = p1_inf-4, largura_p1 = 100;
 const int barra_dir = largura_p0+largura_p1-10, barra_esq = largura_p0+largura_p1-12, barra_alt = p1_sup-30;
@@ -14,16 +15,37 @@ const int font = (int)GLUT_BITMAP_TIMES_ROMAN_24;
 const float gravidade = 10.0, tempo_pulo = 3000;
 
 int tempo_novo, tempo_antigo, inicio_pulo;
-int obstaculos = 8, frame_sel = 30;
+int frame_sel = 30;
 string mensagem = "Clique em iniciar!";
-bool espaco_liberado = false, clique_liberado = true, fim_jogo = false;
-int obsX[8], per_x = 10, per_y = p0_sup;
-GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, i_pulo = 0.0, inc_ang = 90.0;
+bool espaco_liberado = false, clique_liberado = true, fim_jogo = false, colisao = false;
+int obsX[8], per_x = 10, per_y = p0_sup, tipos_obs[8];
+GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, inc_ang = 0.0;
 
-int pulando = 0, vel = 300;
-int MAX_HEIGHT=30;
+int pulando = 0, vel = 8;
+const int MAX_HEIGHT=30;
 GLint jcount=0;
 GLfloat height=0.0;
+
+void reset(){
+    frame_sel = 30;
+    espaco_liberado = false;
+    clique_liberado = true;
+    fim_jogo = false;
+    colisao = false;
+    per_x = 10;
+    per_y = p0_sup;
+    for(int i=0; i<8; i++){
+        obsX[i] = 0;
+    }
+    deslize = 0.0;
+    angulo = 0.0;
+    pulo = 0.0;
+    inc_ang = 0.0;
+    pulando = 0;
+    vel = 300;
+    jcount=0;
+    height=0.0;
+}
 
 void renderBitmapString(float x, float y, void *font,const char *string){
     const char *c;
@@ -162,18 +184,24 @@ void desenhaObstaculos(){
     glColor3f(1.0, 0.0, 0.0);
     int i = 0;
     for(int j=0;j<2;j++){
+        tipos_obs[i] = 0;
         triangulo(i++);
+        tipos_obs[i] = 1;
         ladoAlado(i++);
+        tipos_obs[i] = 2;
         emCimaDoOutro(i++);
         int x = rand() % 2;
         switch(x){
             case 0:
+                tipos_obs[i] = 0;
                 triangulo(i);
                 break;
             case 1:
+                tipos_obs[i] = 1;
                 ladoAlado(i);
                 break;
             case 2:
+                tipos_obs[i] = 2;
                 emCimaDoOutro(i);
                 break;
         }
@@ -184,9 +212,9 @@ void desenhaObstaculos(){
 
 void desenhaPersonagem(){
     glPushMatrix();
-        glTranslatef(per_x+5, per_y-5, 0);
-        glRotatef(angulo, 0.0, 0.0, 1.0);
-        glTranslatef(-per_x-5, -per_y+5, 0);
+    glTranslatef(per_x+5, per_y-5, 0);
+    glRotatef(angulo, 0.0, 0.0, 1.0);
+    glTranslatef(-per_x-5, -per_y+5, 0);
 
     glColor3f(1.0, 1.0, 0.0);
     glBegin(GL_QUADS);
@@ -253,12 +281,14 @@ void desenhaJogo(){
 
     glClear(GL_COLOR_BUFFER_BIT);
 
+    glPushMatrix();
+    glScalef(3.0, 3.0, 1.0);
+
     if(pulando!=0)
     {
         glPushMatrix();
         glTranslatef(per_x+5, per_y-5, 0);
         glTranslatef(0.0,-height,0.0);
-        //glRotatef(angulo, 0.0, 0.0, 1.0);
         glTranslatef(-per_x-5, -per_y+5, 0);
         desenhaPersonagem();
         glPopMatrix();
@@ -269,16 +299,46 @@ void desenhaJogo(){
     desenhaObstaculos();
     desenhaChegada();
 
+    glPopMatrix();
+
     glutSwapBuffers();
 }
 
 bool colidiu(){
-    return true;
+    for(int i=0; i<8; i++){
+        if(tipos_obs[i]==0){
+            if(obsX[i]+deslize <= per_x+10 && per_x+10 <= obsX[i]+10+deslize &&
+              ( (p0_sup <= per_y && per_y <= p0_sup-10) || (p0_sup <= per_y-10 && per_y-10 <= p0_sup-10)) )
+            {
+                return true;
+            }
+        }else if(tipos_obs[i]==1){
+            if(obsX[i]+deslize <= per_x+10 && per_x+10 <= obsX[i]+20+deslize &&
+              ( (p0_sup <= per_y && per_y <= p0_sup-10) || (p0_sup <= per_y-10 && per_y-10 <= p0_sup-10)) )
+            {
+                return true;
+            }
+        }else if(tipos_obs[i]==2){
+            if(obsX[i]+deslize <= per_x+10 && per_x+10 <= obsX[i]+10+deslize &&
+              ( (p0_sup <= per_y && per_y <= p0_sup-20) || (p0_sup <= per_y-10 && per_y-10 <= p0_sup-20)) )
+            {
+                return true;
+            }
+        }
+
+    }
+    if(largura_p0+deslize <= per_x+10 && per_x+10 <= largura_p0+4+deslize &&
+      ( (p0_sup <= per_y && per_y <= p1_sup) || (p0_sup <= per_y-10 && per_y-10 <= p1_sup)) )
+    {
+        return true;
+    }
+
+    return false;
 }
 
 void subindo(){
 	if(pulando==1 && height<MAX_HEIGHT){
-        height+=0.01;
+        height+=1;
 	}
 	else if(pulando==1 && (int)height==MAX_HEIGHT)
 		pulando=-1;
@@ -286,7 +346,7 @@ void subindo(){
 
 void descendo(){
 	if(pulando==-1 && height>0){
-        height-=0.01;
+        height-=1;
 	}
 	else if(pulando==-1 && (int)height==0){
 		pulando=0;
@@ -314,14 +374,29 @@ void geraPosicoesObs() {
         incremento += n;
         obsX[i] = incremento;
     }
-    if(largura_p0 - obsX[obstaculos-1] < 25)
-        obsX[obstaculos-1] = 25;
+
+    if(obsX[0] - per_x < 50)
+        obsX[0] = 50;
+
+    if(largura_p0 - obsX[obstaculos-1] < 50)
+        obsX[obstaculos-1] = 50;
 }
 
 void preparaJogo(){
+    geraPosicoesObs();
     glMatrixMode(GL_MODELVIEW);
-    glScalef(3.0, 3.0, 1.0);
     glutDisplayFunc(desenhaJogo);
+}
+
+void finalizaJogo(bool ganhou){
+    if(ganhou){
+        mensagem = "Voce ganhou!";
+    }
+    else{
+        mensagem = "Voce perdeu!";
+    }
+    glutDisplayFunc(desenhaTelaInicial);
+    reset();
 }
 
 void eventoMouse(int button, int state, int x, int y){
@@ -354,7 +429,6 @@ void alteraTamanhoJanela(GLsizei w, GLsizei h){
 
 void inicializa(){
     // Definir sistema de coordenadas
-    geraPosicoesObs();
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, LARG_JANELA, ALT_JANELA, 0, -1, 1);
@@ -384,9 +458,17 @@ int main(int argc, char** argv){
         if(frame_sel==0 || delta_tempo > 1000/frame_sel){
             //cout << delta_tempo << endl;
             tempo_antigo = tempo_novo;
-            deslize -= 0.6;
-            pula(tempo_novo/1000);
-            i_pulo+=0.2;
+            if(espaco_liberado){
+                deslize -= 0.9;
+                cout << per_x << " - " << barra_esq << " - " << deslize << endl;
+                if(per_x+5 >= largura_p0 + deslize)
+                    per_y = p1_sup;
+                if(per_x+5 >= barra_esq + deslize)
+                    finalizaJogo(true);
+            }
+            if(colidiu()){
+                finalizaJogo(false);
+            }
             glutMainLoopEvent();
             glutPostRedisplay();
         }
