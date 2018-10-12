@@ -4,7 +4,11 @@
 #include <GL/glut.h>
 #include <sstream>
 #include <bits/stdc++.h>
+#include <irrKlang.h>
 using namespace std;
+//using namespace irrklang;
+
+//irrklang::ISoundEngine* SoundEngine = irrklang::createIrrKlangDevice();
 
 const int obstaculos = 8;
 const int p0_sup = 100, p0_inf = p0_sup+4, largura_p0 = 1000;
@@ -17,16 +21,17 @@ const float gravidade = 10.0, tempo_pulo = 3000;
 int tempo_novo, tempo_antigo, inicio_pulo;
 int frame_sel = 30, ob = 0;
 string mensagem = "Clique em iniciar!";
-bool espaco_liberado = false, clique_liberado = true, fim_jogo = false;
+bool espaco_liberado = false, clique_liberado = true, fim_jogo = false, fim = false;
 int obsX[8], per_x = 10, per_y = p0_sup, tipos_obs[8];
-GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, inc_ang = 0.0;
+GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, inc_ang = 0.0, diminui = 1.0;
 
 int pulando = 0, vel = 8, bonus = 0;
-const int MAX_HEIGHT=35;
+const int MAX_HEIGHT=40;
 GLint jcount=0;
 GLfloat height=0.0;
 
 void reset(){
+    fim = false;
     bonus = 0;
     frame_sel = 30;
     espaco_liberado = false;
@@ -47,6 +52,7 @@ void reset(){
     jcount=0;
     height=0.0;
     ob=0;
+    diminui=1.0;
 }
 
 void renderBitmapString(float x, float y, void *font,const char *string){
@@ -216,6 +222,7 @@ void desenhaPersonagem(){
     glPushMatrix();
     glTranslatef(per_x+5, per_y-5, 0);
     glRotatef(angulo, 0.0, 0.0, 1.0);
+    glScalef(diminui, diminui, 1.0);
     glTranslatef(-per_x-5, -per_y+5, 0);
 
     glColor3f(1.0, 1.0, 0.0);
@@ -316,9 +323,6 @@ void desenhaJogo(){
 bool colidiu(){
 
     if(ob<8){
-        cout << "1: " << obsX[ob]+deslize << " - " << per_x+10 << " - " << obsX[ob]+10+deslize << endl;
-        cout << "2: " << p0_sup << " - " << per_y-height << " - " << p0_sup-20 << endl;
-        cout << "3: " << p0_sup << " - " << per_y-10-height << " - " << p0_sup-20 << endl;
 
         if(tipos_obs[ob]==0){
             if( (obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+10+deslize ) &&
@@ -373,7 +377,7 @@ bool colidiu(){
 void subindo(){
 	if(pulando==1 && height<MAX_HEIGHT){
         height+=1;
-        inc_ang += 2.5;
+        inc_ang += 1.125;
 	}
 	else if(pulando==1 && (int)height==MAX_HEIGHT)
 		pulando=-1;
@@ -382,7 +386,7 @@ void subindo(){
 void descendo(){
 	if(pulando==-1 && height>0){
         height-=1;
-        inc_ang += 2.5;
+        inc_ang += 1.125;
 	}
 	else if(pulando==-1 && (int)height==0){
 		pulando=0;
@@ -415,11 +419,6 @@ void geraPosicoesObs() {
 
     if(largura_p0 - obsX[obstaculos-1] < 50)
         obsX[obstaculos-1] -= 50;
-
-    for(int i=0;i<obstaculos;i++){
-        cout << obsX[i] << ' ';
-    }
-    cout << endl;
 }
 
 void preparaJogo(){
@@ -469,6 +468,7 @@ void alteraTamanhoJanela(GLsizei w, GLsizei h){
 
 void inicializa(){
     // Definir sistema de coordenadas
+    //SoundEngine->play2D("unforgettable.mp3", GL_TRUE);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, LARG_JANELA, ALT_JANELA, 0, -1, 1);
@@ -497,16 +497,21 @@ int main(int argc, char** argv){
         float delta_tempo = (float)(tempo_novo - tempo_antigo);
         if(frame_sel==0 || delta_tempo > 1000/frame_sel){
             tempo_antigo = tempo_novo;
-            if(espaco_liberado){
+            if(espaco_liberado && !fim){
                 deslize -= 0.9;
-                if(per_x+10 >= largura_p0 + deslize && !colidiu())
-                    bonus = -height;
+                if(per_x+10 >= largura_p0 + deslize && !colidiu()){
+                    per_y = p1_sup;
+                }
                 if(per_x+5 >= barra_esq + deslize)
                     finalizaJogo(true);
                 if(colidiu()){
-                    deslize = 0.0;
-                    finalizaJogo(false);
+                    fim = true;
                 }
+            }
+            if(fim){
+                diminui -= 0.05;
+                if(diminui <= 0)
+                    finalizaJogo(false);
             }
             glutMainLoopEvent();
             glutPostRedisplay();
