@@ -21,12 +21,13 @@ bool espaco_liberado = false, clique_liberado = true, fim_jogo = false;
 int obsX[8], per_x = 10, per_y = p0_sup, tipos_obs[8];
 GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, inc_ang = 0.0;
 
-int pulando = 0, vel = 8;
-const int MAX_HEIGHT=30;
+int pulando = 0, vel = 8, bonus = 0;
+const int MAX_HEIGHT=35;
 GLint jcount=0;
 GLfloat height=0.0;
 
 void reset(){
+    bonus = 0;
     frame_sel = 30;
     espaco_liberado = false;
     clique_liberado = true;
@@ -45,6 +46,7 @@ void reset(){
     vel = 8;
     jcount=0;
     height=0.0;
+    ob=0;
 }
 
 void renderBitmapString(float x, float y, void *font,const char *string){
@@ -286,16 +288,19 @@ void desenhaJogo(){
 
     if(pulando!=0)
     {
-        glTranslatef(0.0,-height,0.0);
+        glTranslatef(0.0,-height/2, 0.0);
         glPushMatrix();
         glTranslatef(per_x+5, per_y-5, 0);
         glTranslatef(0.0,-height,0.0);
         glTranslatef(-per_x-5, -per_y+5, 0);
         desenhaPersonagem();
         glPopMatrix();
+        glPushMatrix();
+        glTranslatef(0.0, bonus, 0.0);
         desenhaChao();
         desenhaObstaculos();
         desenhaChegada();
+        glPopMatrix();
     }else if(pulando == 0){
         desenhaPersonagem();
         desenhaChao();
@@ -311,23 +316,41 @@ void desenhaJogo(){
 bool colidiu(){
 
     if(ob<8){
-        cout << ob << " - " << per_x-deslize << " - " << obsX[ob]+deslize << endl;
+        cout << "1: " << obsX[ob]+deslize << " - " << per_x+10 << " - " << obsX[ob]+10+deslize << endl;
+        cout << "2: " << p0_sup << " - " << per_y-height << " - " << p0_sup-20 << endl;
+        cout << "3: " << p0_sup << " - " << per_y-10-height << " - " << p0_sup-20 << endl;
 
         if(tipos_obs[ob]==0){
-            if(obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+10+deslize &&
-              ( (p0_sup <= per_y && per_y <= p0_sup-10) || (p0_sup <= per_y-10 && per_y-10 <= p0_sup-10)) )
+            if( (obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+10+deslize ) &&
+              ( (p0_sup >= per_y - height && per_y - height >= p0_sup-10) || (p0_sup >= per_y - height-10 && per_y - height-10 >= p0_sup-10)) )
             {
                 return true;
             }
+            if( (per_x <= obsX[ob]+10+deslize && obsX[ob]+10+deslize <= per_x+10 ) &&
+              ( (per_y - height >= p0_inf && p0_inf >= per_y - height-10) || (per_y - height >= p0_sup && p0_sup >= per_y - height-10)) )
+            {
+                return true;
+            }
+
         }else if(tipos_obs[ob]==1){
-            if(obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+20+deslize &&
-              ( (p0_sup <= per_y && per_y <= p0_sup-10) || (p0_sup <= per_y-10 && per_y-10 <= p0_sup-10)) )
+            if( (obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+20+deslize ) &&
+              ( (p0_sup >= per_y - height && per_y - height >= p0_sup-10) || (p0_sup >= per_y - height-10 && per_y - height-10 >= p0_sup-10)) )
+            {
+                return true;
+            }
+            if( (per_x <= obsX[ob]+20+deslize && obsX[ob]+20+deslize <= per_x+10 ) &&
+              ( (per_y - height >= p0_inf && p0_inf >= per_y - height-10) || (per_y - height >= p0_sup && p0_sup >= per_y - height-10)) )
             {
                 return true;
             }
         }else if(tipos_obs[ob]==2){
-            if(obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+10+deslize &&
-              ( (p0_sup <= per_y && per_y <= p0_sup-20) || (p0_sup <= per_y-10 && per_y-10 <= p0_sup-20)) )
+            if( (obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+10+deslize ) &&
+              ( (p0_sup >= per_y - height && per_y - height >= p0_sup-20) || (p0_sup >= per_y - height-10 && per_y - height-10 >= p0_sup-20)) )
+            {
+                return true;
+            }
+            if( (per_x <= obsX[ob]+10+deslize && obsX[ob]+10+deslize <= per_x+10 ) &&
+              ( (per_y - height >= p0_inf && p0_inf >= per_y - height-10) || (per_y - height >= p0_sup-20 && p0_sup-20 >= per_y - height-10)) )
             {
                 return true;
             }
@@ -335,13 +358,13 @@ bool colidiu(){
     }
 
     else
-        if(largura_p0+deslize <= per_x+10 && per_x+10 <= largura_p0+4+deslize &&
-          ( (p0_sup <= per_y && per_y <= p1_sup) || (p0_sup <= per_y-10 && per_y-10 <= p1_sup)) )
+        if( (largura_p0+deslize <= per_x+10 && per_x+10 <= largura_p0+deslize+4 ) &&
+          ( (p0_inf >= per_y - height && per_y - height >= p1_sup) || (p0_inf >= per_y - height-10 && per_y - height-10 >= p1_sup)) )
         {
             return true;
         }
 
-    if(obsX[ob]+deslize<per_x)
+    if(obsX[ob]+deslize<0)
         ob++;
 
     return false;
@@ -350,7 +373,7 @@ bool colidiu(){
 void subindo(){
 	if(pulando==1 && height<MAX_HEIGHT){
         height+=1;
-        inc_ang += 7.5;
+        inc_ang += 2.5;
 	}
 	else if(pulando==1 && (int)height==MAX_HEIGHT)
 		pulando=-1;
@@ -359,7 +382,7 @@ void subindo(){
 void descendo(){
 	if(pulando==-1 && height>0){
         height-=1;
-        inc_ang += 7.5;
+        inc_ang += 2.5;
 	}
 	else if(pulando==-1 && (int)height==0){
 		pulando=0;
@@ -476,8 +499,8 @@ int main(int argc, char** argv){
             tempo_antigo = tempo_novo;
             if(espaco_liberado){
                 deslize -= 0.9;
-                if(per_x+5 >= largura_p0 + deslize && !colidiu())
-                    per_y = p1_sup;
+                if(per_x+10 >= largura_p0 + deslize && !colidiu())
+                    bonus = -height;
                 if(per_x+5 >= barra_esq + deslize)
                     finalizaJogo(true);
                 if(colidiu()){
