@@ -15,9 +15,9 @@ const int font = (int)GLUT_BITMAP_TIMES_ROMAN_24;
 const float gravidade = 10.0, tempo_pulo = 3000;
 
 int tempo_novo, tempo_antigo, inicio_pulo;
-int frame_sel = 30;
+int frame_sel = 30, ob = 0;
 string mensagem = "Clique em iniciar!";
-bool espaco_liberado = false, clique_liberado = true, fim_jogo = false, colisao = false;
+bool espaco_liberado = false, clique_liberado = true, fim_jogo = false;
 int obsX[8], per_x = 10, per_y = p0_sup, tipos_obs[8];
 GLfloat deslize = 0.0, angulo = 0.0, pulo = 0.0, inc_ang = 0.0;
 
@@ -31,18 +31,18 @@ void reset(){
     espaco_liberado = false;
     clique_liberado = true;
     fim_jogo = false;
-    colisao = false;
     per_x = 10;
     per_y = p0_sup;
     for(int i=0; i<8; i++){
         obsX[i] = 0;
+        tipos_obs[i] = 0;
     }
     deslize = 0.0;
     angulo = 0.0;
     pulo = 0.0;
     inc_ang = 0.0;
     pulando = 0;
-    vel = 300;
+    vel = 8;
     jcount=0;
     height=0.0;
 }
@@ -286,18 +286,22 @@ void desenhaJogo(){
 
     if(pulando!=0)
     {
+        glTranslatef(0.0,-height,0.0);
         glPushMatrix();
         glTranslatef(per_x+5, per_y-5, 0);
         glTranslatef(0.0,-height,0.0);
         glTranslatef(-per_x-5, -per_y+5, 0);
         desenhaPersonagem();
         glPopMatrix();
-    }else if(pulando == 0)
+        desenhaChao();
+        desenhaObstaculos();
+        desenhaChegada();
+    }else if(pulando == 0){
         desenhaPersonagem();
-
-    desenhaChao();
-    desenhaObstaculos();
-    desenhaChegada();
+        desenhaChao();
+        desenhaObstaculos();
+        desenhaChegada();
+    }
 
     glPopMatrix();
 
@@ -305,33 +309,40 @@ void desenhaJogo(){
 }
 
 bool colidiu(){
-    for(int i=0; i<8; i++){
-        if(tipos_obs[i]==0){
-            if(obsX[i]+deslize <= per_x+10 && per_x+10 <= obsX[i]+10+deslize &&
+
+    if(ob<8){
+        cout << ob << " - " << per_x-deslize << " - " << obsX[ob]+deslize << endl;
+
+        if(tipos_obs[ob]==0){
+            if(obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+10+deslize &&
               ( (p0_sup <= per_y && per_y <= p0_sup-10) || (p0_sup <= per_y-10 && per_y-10 <= p0_sup-10)) )
             {
                 return true;
             }
-        }else if(tipos_obs[i]==1){
-            if(obsX[i]+deslize <= per_x+10 && per_x+10 <= obsX[i]+20+deslize &&
+        }else if(tipos_obs[ob]==1){
+            if(obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+20+deslize &&
               ( (p0_sup <= per_y && per_y <= p0_sup-10) || (p0_sup <= per_y-10 && per_y-10 <= p0_sup-10)) )
             {
                 return true;
             }
-        }else if(tipos_obs[i]==2){
-            if(obsX[i]+deslize <= per_x+10 && per_x+10 <= obsX[i]+10+deslize &&
+        }else if(tipos_obs[ob]==2){
+            if(obsX[ob]+deslize <= per_x+10 && per_x+10 <= obsX[ob]+10+deslize &&
               ( (p0_sup <= per_y && per_y <= p0_sup-20) || (p0_sup <= per_y-10 && per_y-10 <= p0_sup-20)) )
             {
                 return true;
             }
         }
+    }
 
-    }
-    if(largura_p0+deslize <= per_x+10 && per_x+10 <= largura_p0+4+deslize &&
-      ( (p0_sup <= per_y && per_y <= p1_sup) || (p0_sup <= per_y-10 && per_y-10 <= p1_sup)) )
-    {
-        return true;
-    }
+    else
+        if(largura_p0+deslize <= per_x+10 && per_x+10 <= largura_p0+4+deslize &&
+          ( (p0_sup <= per_y && per_y <= p1_sup) || (p0_sup <= per_y-10 && per_y-10 <= p1_sup)) )
+        {
+            return true;
+        }
+
+    if(obsX[ob]+deslize<per_x)
+        ob++;
 
     return false;
 }
@@ -339,6 +350,7 @@ bool colidiu(){
 void subindo(){
 	if(pulando==1 && height<MAX_HEIGHT){
         height+=1;
+        inc_ang += 7.5;
 	}
 	else if(pulando==1 && (int)height==MAX_HEIGHT)
 		pulando=-1;
@@ -347,10 +359,10 @@ void subindo(){
 void descendo(){
 	if(pulando==-1 && height>0){
         height-=1;
+        inc_ang += 7.5;
 	}
 	else if(pulando==-1 && (int)height==0){
 		pulando=0;
-		inc_ang += 90;
 		jcount--;
 	}
 }
@@ -376,15 +388,21 @@ void geraPosicoesObs() {
     }
 
     if(obsX[0] - per_x < 50)
-        obsX[0] = 50;
+        obsX[0] = +50;
 
     if(largura_p0 - obsX[obstaculos-1] < 50)
-        obsX[obstaculos-1] = 50;
+        obsX[obstaculos-1] -= 50;
+
+    for(int i=0;i<obstaculos;i++){
+        cout << obsX[i] << ' ';
+    }
+    cout << endl;
 }
 
 void preparaJogo(){
     geraPosicoesObs();
     glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
     glutDisplayFunc(desenhaJogo);
 }
 
@@ -395,8 +413,8 @@ void finalizaJogo(bool ganhou){
     else{
         mensagem = "Voce perdeu!";
     }
-    glutDisplayFunc(desenhaTelaInicial);
     reset();
+    glutDisplayFunc(desenhaTelaInicial);
 }
 
 void eventoMouse(int button, int state, int x, int y){
@@ -414,7 +432,6 @@ void eventoMouse(int button, int state, int x, int y){
 
 void eventoTeclado(unsigned char key, int x, int y){
     if(key==' '){
-        cout << "j: " << jcount << endl;
         if(jcount==0)
 		{
 			pulando = 1;
@@ -456,18 +473,17 @@ int main(int argc, char** argv){
         tempo_novo = glutGet(GLUT_ELAPSED_TIME);
         float delta_tempo = (float)(tempo_novo - tempo_antigo);
         if(frame_sel==0 || delta_tempo > 1000/frame_sel){
-            //cout << delta_tempo << endl;
             tempo_antigo = tempo_novo;
             if(espaco_liberado){
                 deslize -= 0.9;
-                cout << per_x << " - " << barra_esq << " - " << deslize << endl;
-                if(per_x+5 >= largura_p0 + deslize)
+                if(per_x+5 >= largura_p0 + deslize && !colidiu())
                     per_y = p1_sup;
                 if(per_x+5 >= barra_esq + deslize)
                     finalizaJogo(true);
-            }
-            if(colidiu()){
-                finalizaJogo(false);
+                if(colidiu()){
+                    deslize = 0.0;
+                    finalizaJogo(false);
+                }
             }
             glutMainLoopEvent();
             glutPostRedisplay();
