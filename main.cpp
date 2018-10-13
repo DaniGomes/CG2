@@ -8,7 +8,7 @@
 using namespace std;
 //using namespace irrklang;
 
-//irrklang::ISoundEngine* SoundEngine = irrklang::createIrrKlangDevice();
+irrklang::ISoundEngine* SoundEngine = irrklang::createIrrKlangDevice();
 
 const int obstaculos = 8;
 const int p0_sup = 100, p0_inf = p0_sup+4, largura_p0 = 1000;
@@ -468,7 +468,7 @@ void alteraTamanhoJanela(GLsizei w, GLsizei h){
 
 void inicializa(){
     // Definir sistema de coordenadas
-    //SoundEngine->play2D("unforgettable.mp3", GL_TRUE);
+    SoundEngine->play2D("unforgettable.ogg", GL_TRUE);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, LARG_JANELA, ALT_JANELA, 0, -1, 1);
