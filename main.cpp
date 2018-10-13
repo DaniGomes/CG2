@@ -422,6 +422,8 @@ void geraPosicoesObs() {
 }
 
 void preparaJogo(){
+    clique_liberado = false;
+    espaco_liberado = true;
     geraPosicoesObs();
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -445,8 +447,6 @@ void eventoMouse(int button, int state, int x, int y){
         else if(x>200 && x<300 && y>50 && y<150) frame_sel = 30;
         else if(x>350 && x<450 && y>50 && y<150) frame_sel = 60;
         else if(x>50 && x<450 && y>200 && y<300) {
-            clique_liberado = false;
-            espaco_liberado = true;
             preparaJogo();
         }
     }
@@ -508,7 +508,7 @@ int main(int argc, char** argv){
                     fim = true;
                 }
             }
-            if(fim){
+            if(espaco_liberado && fim){
                 diminui -= 0.05;
                 if(diminui <= 0)
                     finalizaJogo(false);
